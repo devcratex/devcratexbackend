@@ -67,20 +67,34 @@ router.get('/:id', async (req, res) => {
 });
 
 // UPDATE – allow updating categoriesList
+// UPDATE – NO TRIM ANYWHERE (100% safe)
 router.put('/:id', async (req, res) => {
   try {
     const { slug, youtubeUrl, categoriesList, ...rest } = req.body;
+
     const updateData = { ...rest };
 
-    if (slug !== undefined) updateData.slug = slug.trim() || null;
-    if (youtubeUrl !== undefined) updateData.youtubeUrl = youtubeUrl.trim() || null;
+    // slug – accept exactly what frontend sends (no trim)
+    if (slug !== undefined) {
+      updateData.slug = (slug === '' || slug === null) ? null : slug;
+    }
+
+    // youtubeUrl – accept exactly what frontend sends (no trim)
+    if (youtubeUrl !== undefined) {
+      updateData.youtubeUrl = (youtubeUrl === '' || youtubeUrl === null) ? null : youtubeUrl;
+    }
+
+    // categoriesList – keep as array
     if (categoriesList !== undefined) {
       updateData.categoriesList = Array.isArray(categoriesList) ? categoriesList : [];
     }
 
+    // Update Firebase document
     await db.collection('projects').doc(req.params.id).set(updateData, { merge: true });
+
     res.json({ success: true });
   } catch (e) {
+    console.error('Update error:', e);
     res.status(500).json({ error: e.message });
   }
 });
